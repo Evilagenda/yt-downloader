@@ -1,6 +1,4 @@
-
-
-	mport os
+import os
 from flask import Flask, render_template, request, jsonify
 import yt_dlp
 
@@ -37,7 +35,6 @@ def get_info():
         }
     }
 
-    # Inject cookie file if available
     if os.path.exists(COOKIE_FILE_PATH):
         ydl_opts['cookiefile'] = COOKIE_FILE_PATH
 
@@ -78,4 +75,3 @@ def get_info():
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
-
