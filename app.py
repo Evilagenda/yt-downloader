@@ -1,10 +1,23 @@
 import os
+import base64
 from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
 import yt_dlp
 
 app = Flask(__name__)
 CORS(app)
+
+# Write cookies from environment variable if present
+COOKIE_FILE_PATH = "/tmp/cookies.txt"
+COOKIES_ENV = os.environ.get("YOUTUBE_COOKIES_BASE64")
+
+if COOKIES_ENV:
+    try:
+        decoded_cookies = base64.b64decode(COOKIES_ENV).decode("utf-8")
+        with open(COOKIE_FILE_PATH, "w") as f:
+            f.write(decoded_cookies)
+    except Exception as e:
+        print(f"Failed to load environment cookies: {e}")
 
 @app.route('/')
 def index():
@@ -16,23 +29,26 @@ def get_info():
     url = data.get('url', '').strip()
 
     if not url:
-        return jsonify({'error': 'Please provide a valid URL.'}), 400
+        return jsonify({'error': 'Please provide a valid YouTube URL.'}), 400
 
-    # Modern client player spoofing to bypass YouTube bot detection on cloud IPs
     ydl_opts = {
         'quiet': True,
         'no_warnings': True,
         'extract_flat': False,
         'extractor_args': {
             'youtube': {
-                'player_client': ['android', 'ios', 'web_creator']
+                'player_client': ['ios', 'android', 'mweb', 'web']
             }
         },
         'http_headers': {
-            'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1',
+            'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
             'Accept-Language': 'en-US,en;q=0.9',
         }
     }
+
+    # Inject cookie file if available
+    if os.path.exists(COOKIE_FILE_PATH):
+        ydl_opts['cookiefile'] = COOKIE_FILE_PATH
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
