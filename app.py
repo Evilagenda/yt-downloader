@@ -18,12 +18,18 @@ def get_info():
     if not url:
         return jsonify({'error': 'Please provide a valid URL.'}), 400
 
+    # Modern client player spoofing to bypass YouTube bot detection on cloud IPs
     ydl_opts = {
         'quiet': True,
         'no_warnings': True,
         'extract_flat': False,
+        'extractor_args': {
+            'youtube': {
+                'player_client': ['android', 'ios', 'web_creator']
+            }
+        },
         'http_headers': {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1',
             'Accept-Language': 'en-US,en;q=0.9',
         }
     }
@@ -36,7 +42,6 @@ def get_info():
             extracted_formats = []
             seen_resolutions = set()
 
-            # Process formats from highest quality to lowest
             for f in reversed(raw_formats):
                 download_url = f.get('url')
                 if not download_url:
@@ -47,7 +52,6 @@ def get_info():
                 acodec = f.get('acodec', 'none')
                 height = f.get('height')
                 
-                # Determine label
                 if height:
                     res_label = f"{height}p"
                 elif vcodec == 'none' and acodec != 'none':
@@ -55,7 +59,6 @@ def get_info():
                 else:
                     res_label = f.get('format_note') or "SD"
 
-                # Avoid duplicate resolution entries
                 combo_key = f"{res_label}-{ext}"
                 if combo_key in seen_resolutions:
                     continue
